@@ -1,0 +1,12 @@
+# ----------------------------------------------------------------------------
+# This file is an example for a configuration file used by 
+# twitter_search.py 
+# It contains a twitter account credentials that the script
+# uses to login to twitter to use its API.
+# To use this file, rename the following fields and 
+# rename the file to `twitter.toml`.
+# ----------------------------------------------------------------------------
+
+username="username" # twitter handle @USER_NAME
+email="email@example.com" # mail used to create account
+password="PASSWORD" # account password
