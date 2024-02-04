@@ -1,0 +1,30 @@
+{
+    "name": "get_victims",
+    "arguments": [
+        {
+            "name": "Ruqaya Ahmad Odeh Jahalin",
+            "dod": "January 7, 2024",
+            "location": "Beit Iksa, central occupied West Bank"
+        },
+        {
+            "name": "Palestinian man",
+            "dod": "January 7, 2024",
+            "location": "Unknown"
+        },
+        {
+            "name": "Palestinian woman",
+            "dod": "January 7, 2024",
+            "location": "Unknown"
+        },
+        {
+            "name": "Wadea Yaser Hasan Asous",
+            "dod": "January 7, 2024",
+            "location": "Jenin, occupied West Bank"
+        },
+        {
+            "name": "Usaid Tareq Anis Rimawi",
+            "dod": "January 5, 2024",
+            "location": "Beit Rima, occupied West Bank"
+        }
+    ]
+}

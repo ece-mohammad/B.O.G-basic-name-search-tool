@@ -1,0 +1,23 @@
+{
+  "name": "b.o.g-basic-name-search-tool",
+  "version": "0.1.0",
+  "description": "Birds of Gaza basic search tool, automates searching for martyred children by name in multiple sites.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "ts-node sites/dci-palestine.org.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.1",
+    "jsdom": "^24.0.0",
+    "openai": "^4.26.0",
+    "puppeteer": "^21.10.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2"
+  }
+}
