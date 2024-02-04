@@ -197,7 +197,7 @@ const htmlToText = async (html) => {
     // remove all css
     const styles = document.querySelectorAll('style')
     styles.forEach((style) => style.remove())
-    const text = document.body.textContent
+    const text = document.querySelector('.content-box')?.textContent
     dom.window.close()
     const cleaned = clean(text)
     //console.log({ cleaned })
