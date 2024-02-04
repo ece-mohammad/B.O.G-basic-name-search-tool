@@ -86,7 +86,8 @@ const hash = (str) => {
 }
 
 const promptGetNamesArray = `
-You are a helpful assistant. Your job is to get the names, dates of death, and location of death of the victims mentioned in the page.
+You are a helpful assistant. Your job is to get the names, dates of death, and location of death of the victims mentioned in the page. 
+If you don't have a name, don't return an entry for that victim. It's important to get the ages of the victims.
 `
 
 const get_victims = {
@@ -210,10 +211,10 @@ const getPageAndConvertToText = async (file) => {
 
 getPageAndConvertToText('2024/January/1822841312.html').then(async (text) => {
     const response = await callClosedAi(text)
-    console.log({ text, response })
+    console.log({ text, data: response })
     // write response to test file
     const testFileName = `./test/llm-payload.json`
-    await promises.writeFile(testFileName, JSON.stringify(response))
+    await promises.writeFile(testFileName, JSON.stringify({ text, data: response }))
 })
 // grab all the html files from each link and store them in a directorty with the year/month as the directory
 const getArticles = async (links) => {
