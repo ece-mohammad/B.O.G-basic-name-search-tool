@@ -7,19 +7,36 @@
         "name": "Ruqaya Ahmad Odeh Jahalin",
         "dod": "January 7",
         "location": "Beit Iksa, central occupied West Bank",
-        "age": "4"
+        "age": "4",
+        "sex": "female"
+      },
+      {
+        "name": "Palestinian man",
+        "dod": "January 7",
+        "location": "unknown",
+        "age": "",
+        "sex": ""
+      },
+      {
+        "name": "Palestinian woman",
+        "dod": "January 7",
+        "location": "unknown",
+        "age": "",
+        "sex": ""
       },
       {
         "name": "Wadea Yaser Hasan Asous",
         "dod": "January 7",
         "location": "Jenin",
-        "age": "17"
+        "age": "17",
+        "sex": "male"
       },
       {
         "name": "Usaid Tareq Anis Rimawi",
         "dod": "January 5",
         "location": "Beit Rima",
-        "age": "17"
+        "age": "17",
+        "sex": "male"
       }
     ]
   }

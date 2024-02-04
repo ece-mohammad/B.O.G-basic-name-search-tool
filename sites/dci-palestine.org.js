@@ -85,8 +85,30 @@ const hash = (str) => {
     return hash
 }
 
+const keywords = [
+    'shoot',
+    'shot',
+    'kill',
+    'murder',
+    'fire',
+    'weapon',
+    'dead',
+    'died',
+    'death',
+    'injur',
+    'wound',
+    'hurt',
+    'casualt',
+    'fatal',
+    'bomb',
+    'explo',
+    'strike',
+    'attack',
+    'viol',
+]
+
 const promptGetNamesArray = `
-You are a helpful assistant. Your job is to get the names, dates of death, age, and location of death of the victims mentioned in the page. 
+You are a helpful assistant. Your job is to get the names, dates of death, age, sex, and location of death of the victims mentioned in the page. 
 If you don't have a specific name for the victim, don't return an entry for that victim. It's important to get the ages of the victims.
 `
 
@@ -111,7 +133,8 @@ const get_victims = {
                             },
                             dod: {
                                 type: 'string',
-                                description: 'The date of death of the victim',
+                                description:
+                                    'The date of death of the victim, e.g., January 1, 2023',
                             },
                             location: {
                                 type: 'string',
@@ -121,6 +144,10 @@ const get_victims = {
                                 type: 'string',
                                 description: 'The age of the victim at the time of death',
                             },
+                            sex: {
+                                type: 'string',
+                                description: 'The sex of the victim',
+                            },
                         },
                     },
                 },
@@ -128,9 +155,14 @@ const get_victims = {
         },
     },
 }
-const callClosedAi = async (text) => {
+
+const callClosedAi = async ({ text, prompt = promptGetNamesArray, tools = [get_victims] }) => {
     const api_key = process.env.OPENAI_API_KEY
     console.log({ api_key })
+    const {
+        type,
+        function: { name },
+    } = tools[0]
     try {
         const url = 'https://api.openai.com/v1/chat/completions'
 
@@ -140,21 +172,24 @@ const callClosedAi = async (text) => {
                 messages: [
                     {
                         role: 'system',
-                        content: promptGetNamesArray,
+                        content: prompt,
                     },
                     {
                         role: 'user',
                         content: text,
                     },
                 ],
-                tools: [get_victims],
-                tool_choice: {
-                    type: 'function',
-                    function: { name: 'get_victims' },
-                },
-                //tool_choice: 'auto',
                 temperature: 0,
                 max_tokens: 2000,
+                ...(tools && {
+                    tools,
+                    tool_choice: {
+                        type,
+                        function: { name },
+                    },
+                }),
+
+                //tool_choice: 'auto',
             }),
             method: 'POST',
             headers: {
@@ -182,11 +217,9 @@ const callClosedAi = async (text) => {
     }
 }
 
+const clean = (str) => str.replace(/\s{2,}/g, ' ').trim()
+
 // grab a sample page file, convert html to text
-
-const extraWhitespace = /\s{2,}/g
-const clean = (str) => str.replace(extraWhitespace, ' ').trim()
-
 const htmlToText = async (html) => {
     // convert html to plain text
     const dom = new JSDOM(html)
@@ -210,42 +243,73 @@ const getPageAndConvertToText = async (file) => {
 }
 
 getPageAndConvertToText('2024/January/1822841312.html').then(async (text) => {
-    const response = await callClosedAi(text)
+    const response = await callClosedAi({ text })
     console.log({ text, data: response })
     // write response to test file
     const testFileName = `./test/llm-payload.json`
     await promises.writeFile(testFileName, JSON.stringify({ text, data: response }, null, 2))
 })
+
+const getPageAndConvertToData = async (file) => {
+    const html = readFileSync(file, 'utf8')
+    const text = await htmlToText(html)
+    const response = await callClosedAi({ text })
+    return response
+}
+
 // grab all the html files from each link and store them in a directorty with the year/month as the directory
 const getArticles = async (links) => {
     const articles = await Promise.all(
-        links.map(async (payload) => {
-            const { link, headline, date } = payload
-            const hashed = hash(headline)
-            // save the html
-            const _date = new Date(date)
-            const year = _date.getFullYear()
-            // get month name
-            const month = _date.toLocaleString('default', { month: 'long' })
-            const day = _date.getDate()
-            const dir = `${year}/${month}`
+        links
+            .map(async (payload) => {
+                const { link, headline, date } = payload
+                // if the lowercased headline contains any of the keywords
+                if (keywords.some((word) => headline.toLowerCase().includes(word))) {
+                    const hashed = hash(headline)
+                    // save the html
+                    const _date = new Date(date)
+                    const year = _date.getFullYear()
+                    // get month name
+                    const month = _date.toLocaleString('default', { month: 'long' })
+                    const day = _date.getDate()
+                    const dir = `${year}/${month}`
 
-            const fileName = `${dir}/${hashed}.html`
-            // if the file already exists, don't scrape it it
-            try {
-                await promises.access(fileName)
-                return { headline, date, link, fileName }
-            } catch (e) {
-                //console.log('file does not exist')
+                    const htmlFile = `${dir}/${hashed}.html`
+                    const metaFile = `${dir}/${hashed}.json`
+                    // get the data
+                    let data = { arguments: null, name: null }
+                    try {
+                        data = (await getPageAndConvertToData(htmlFile)) || {
+                            arguments: null,
+                            name: null,
+                        }
+                    } catch (e) {
+                        console.error(`Error getting victims from closedai: ${e}`)
+                    }
+                    // if the file already exists, don't scrape it it
+                    const victims = data['arguments']
+                    try {
+                        await promises.access(htmlFile)
+                        return { headline, date, link, htmlFile, victims }
+                    } catch (e) {
+                        //console.log('file does not exist')
 
-                const res = await fetch(link)
-                const html = await res.text()
+                        const res = await fetch(link)
+                        const html = await res.text()
 
-                await promises.mkdir(dir, { recursive: true })
-                await promises.writeFile(fileName, html)
-                return { headline, date, link, fileName }
-            }
-        })
+                        await promises.mkdir(dir, { recursive: true })
+                        await promises.writeFile(htmlFile, html)
+                        await promises.writeFile(
+                            metaFile,
+                            JSON.stringify({ headline, date, link, victims })
+                        )
+                        return { headline, date, link, htmlFile, victims }
+                    }
+                } else {
+                    return null
+                }
+            })
+            .filter((article) => article !== null)
     )
     return articles
 }
@@ -256,9 +320,9 @@ const getArticlesByPage = async (file) => {
     // save the articles as a separate file
     const dir = `./test`
     await promises.mkdir(dir, { recursive: true })
-    await promises.writeFile(`${dir}/testy.json`, JSON.stringify(articlesForPage))
+    await promises.writeFile(`${dir}/page1.json`, JSON.stringify(articlesForPage))
     return articlesForPage
 }
 
-//getArticlesByPage(file).then(console.log)
+getArticlesByPage(file).then(console.log)
 //console.log(text)

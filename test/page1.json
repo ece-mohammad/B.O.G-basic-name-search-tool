@@ -1,0 +1,263 @@
+[
+    {
+        "headline": "Israeli forces fatally shoot 17-year-old Palestinian boy in Silwad",
+        "date": "January 29 2024",
+        "link": "https://www.dci-palestine.org/israeli_forces_fatally_shoot_17_year_old_palestinian_boy_in_silwad",
+        "htmlFile": "2024/January/133628990.html",
+        "victims": [
+            {
+                "name": "Abdulrahman Abdulrahim Suleiman Hamed",
+                "dod": "January 29, 2024",
+                "location": "Silwad, central occupied West Bank",
+                "age": "17",
+                "sex": "Male"
+            }
+        ]
+    },
+    {
+        "headline": "Israeli forces shoot 16-year-old Palestinian boy, watch him bleed out",
+        "date": "January 23 2024",
+        "link": "https://www.dci-palestine.org/israeli_forces_shoot_16_year_old_palestinian_boy_watch_him_bleed_out",
+        "htmlFile": "2024/January/1479326112.html",
+        "victims": [
+            {
+                "name": "Yamen Mohammad Mustafa Lahlouh",
+                "dod": "January 22",
+                "location": "Arraba, northern occupied West Bank",
+                "age": "16",
+                "sex": "Male"
+            }
+        ]
+    },
+    {
+        "headline": "Israeli settler, soldier shoot dead 17-year-old Palestinian-American boy",
+        "date": "January 20 2024",
+        "link": "https://www.dci-palestine.org/israeli_settler_soldier_shoot_dead_17_year_old_palestinian_american_boy",
+        "htmlFile": "2024/January/1426841998.html",
+        "victims": [
+            {
+                "name": "Tawfiq Hafez Tawfiq Ajaq",
+                "dod": "January 19",
+                "location": "Al-Mazra’a Al-Sharqiya, east of Ramallah",
+                "age": "17",
+                "sex": "Male"
+            }
+        ]
+    },
+    {
+        "headline": "Israeli forces kill three Palestinian boys in a drone strike in Tulkarem",
+        "date": "January 18 2024",
+        "link": "https://www.dci-palestine.org/israeli_forces_kill_three_palestinian_boys_in_a_drone_strike_in_tulkarem",
+        "htmlFile": "2024/January/1553723148.html",
+        "victims": [
+            {
+                "name": "Walid Ibrahim Mohammad Ghanem",
+                "dod": "January 17",
+                "location": "Tulkarem refugee camp",
+                "age": "17",
+                "sex": "male"
+            },
+            {
+                "name": "Ahmad Tareq No'man Beddo",
+                "dod": "January 17",
+                "location": "Tulkarem refugee camp",
+                "age": "17",
+                "sex": "male"
+            },
+            {
+                "name": "Ahmad Mousa Mutlaq Faraj",
+                "dod": "January 17",
+                "location": "Tulkarem refugee camp",
+                "age": "17",
+                "sex": "male"
+            }
+        ]
+    },
+    {
+        "headline": "Israeli forces shoot dead three Palestinian children near Ramallah, Jericho",
+        "date": "January 15 2024",
+        "link": "https://www.dci-palestine.org/israeli_forces_shoot_dead_three_palestinian_children_near_ramallah_jericho",
+        "htmlFile": "2024/January/486188301.html",
+        "victims": [
+            {
+                "name": "Khaled Amer Khaled Hmaidat",
+                "dod": "January 14",
+                "location": "Al-Bireh, near Ramallah, occupied West Bank",
+                "age": "16",
+                "sex": "Male"
+            },
+            {
+                "name": "Suleiman Mohammad Suleiman Kanaan",
+                "dod": "January 14",
+                "location": "Al-Bireh, near Ramallah, occupied West Bank",
+                "age": "17",
+                "sex": "Male"
+            },
+            {
+                "name": "Luai Majed Salem Al-Soufi",
+                "dod": "January 14",
+                "location": "Ain Al-Sultan refugee camp, northwest of Jericho, occupied West Bank",
+                "age": "16",
+                "sex": "Male"
+            },
+            {
+                "name": "Odai Ismail Yousef Abu Juhaisha",
+                "dod": "January 12",
+                "location": "Hebron, occupied West Bank",
+                "age": "17",
+                "sex": "Male"
+            },
+            {
+                "name": "Mohammad Arafat Yousef Abu Juhaisha",
+                "dod": "January 12",
+                "location": "Hebron, occupied West Bank",
+                "age": "15",
+                "sex": "Male"
+            },
+            {
+                "name": "Wadea Yaser Hasan Asous",
+                "dod": "January 7",
+                "location": "Jenin, occupied West Bank",
+                "age": "17",
+                "sex": "Male"
+            },
+            {
+                "name": "Usaid Tareq Anis Rimawi",
+                "dod": "January 5",
+                "location": "Beit Rima, occupied West Bank",
+                "age": "17",
+                "sex": "Male"
+            },
+            {
+                "name": "Ruqaya Ahmad Odeh Jahalin",
+                "dod": "January 7",
+                "location": "Beit Iksa, occupied West Bank",
+                "age": "4",
+                "sex": "Female"
+            }
+        ]
+    },
+    {
+        "headline": "Israeli forces shoot and kill two Palestinian boys near Hebron",
+        "date": "January 14 2024",
+        "link": "https://www.dci-palestine.org/israeli_forces_shoot_and_kill_two_palestinian_boys_near_hebron",
+        "htmlFile": "2024/January/652105392.html",
+        "victims": [
+            {
+                "name": "Odai Ismail Yousef Abu Juhaisha",
+                "dod": "January 12, 2024",
+                "location": "near the illegal Israeli settlement of Adora, located near Hebron",
+                "age": "17",
+                "sex": "Male"
+            },
+            {
+                "name": "Mohammad Arafat Yousef Abu Juhaisha",
+                "dod": "January 12, 2024",
+                "location": "near the illegal Israeli settlement of Adora, located near Hebron",
+                "age": "15",
+                "sex": "Male"
+            },
+            {
+                "name": "Wadea Yaser Hasan Asous",
+                "dod": "January 7, 2024",
+                "location": "Jenin",
+                "age": "17",
+                "sex": "Male"
+            },
+            {
+                "name": "Usaid Tareq Anis Rimawi",
+                "dod": "January 5, 2024",
+                "location": "Beit Rima",
+                "age": "17",
+                "sex": "Male"
+            },
+            {
+                "name": "Ruqaya Ahmad Odeh Jahalin",
+                "dod": "January 7, 2024",
+                "location": "near an Israeli military checkpoint near the Palestinian village of Beit Iksa",
+                "age": "4",
+                "sex": "Female"
+            }
+        ]
+    },
+    {
+        "headline": "Israeli forces shoot, kill 4-year-old Palestinian girl in the backseat of a car",
+        "date": "January 08 2024",
+        "link": "https://www.dci-palestine.org/israeli_forces_shoot_kill_4_year_old_palestinian_girl_in_the_backseat_of_a_car",
+        "htmlFile": "2024/January/1822841312.html",
+        "victims": [
+            {
+                "name": "Ruqaya Ahmad Odeh Jahalin",
+                "dod": "January 7",
+                "location": "Beit Iksa, central occupied West Bank",
+                "age": "4",
+                "sex": "female"
+            },
+            {
+                "name": "Palestinian man",
+                "dod": "January 7",
+                "location": "Unknown",
+                "age": "",
+                "sex": ""
+            },
+            {
+                "name": "Palestinian woman",
+                "dod": "January 7",
+                "location": "Unknown",
+                "age": "",
+                "sex": ""
+            },
+            {
+                "name": "Wadea Yaser Hasan Asous",
+                "dod": "January 7",
+                "location": "Jenin",
+                "age": "17",
+                "sex": "male"
+            },
+            {
+                "name": "Usaid Tareq Anis Rimawi",
+                "dod": "January 5",
+                "location": "Beit Rima",
+                "age": "17",
+                "sex": "male"
+            }
+        ]
+    },
+    {
+        "headline": "Israeli forces shoot, kill Palestinian boy attempting to offer aid",
+        "date": "January 05 2024",
+        "link": "https://www.dci-palestine.org/israeli_forces_shoot_kill_palestinian_boy_attempting_to_offer_aid",
+        "htmlFile": "2024/January/-62836608.html",
+        "victims": [
+            {
+                "name": "Usaid Tareq Anis Rimawi",
+                "dod": "January 5, 2024",
+                "location": "Ramallah",
+                "age": "17",
+                "sex": "Male"
+            }
+        ]
+    },
+    {
+        "headline": "Israeli forces shoot dead two Palestinian boys in the occupied West Bank",
+        "date": "December 30 2023",
+        "link": "https://www.dci-palestine.org/israeli_forces_shoot_dead_two_palestinian_boys_occupied_west_bank",
+        "htmlFile": "2023/December/1938169700.html",
+        "victims": [
+            {
+                "name": "Ammar Mohammad Abdelfattah Abu Hussein",
+                "dod": "December 29, 2023",
+                "location": "Route 60, West Bank",
+                "age": "16",
+                "sex": "Male"
+            },
+            {
+                "name": "Mahmoud Othman Mohammad Warani",
+                "dod": "December 29, 2023",
+                "location": "Al-Ezariya, West Bank",
+                "age": "15",
+                "sex": "Male"
+            }
+        ]
+    }
+]
