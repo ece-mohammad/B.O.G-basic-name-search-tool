@@ -86,7 +86,7 @@ const hash = (str) => {
 }
 
 const promptGetNamesArray = `
-You are a helpful assistant. Your job is to get the names, dates of death, and location of death of the victims mentioned in the page. 
+You are a helpful assistant. Your job is to get the names, dates of death, age, and location of death of the victims mentioned in the page. 
 If you don't have a specific name for the victim, don't return an entry for that victim. It's important to get the ages of the victims.
 `
 
