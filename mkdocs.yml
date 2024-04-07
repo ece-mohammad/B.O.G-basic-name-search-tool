@@ -1,0 +1,12 @@
+site_name: Martyr Name Basic Search Tool
+repo_url: https://github.com/ece-mohammad/bog-basic-search-tool
+repo_name: Github
+site_author: Mohammad Mohsen
+copyright: Copyright (c) 2024, Mohammad Mohsen
+nav:
+  - Home: index.md
+  - About: about.md
+  - Docs: docs.md
+  - Contact: contact.md
+theme:
+  name: 'readthedocs'
