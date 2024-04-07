@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "martyr-search-tool"
+version = "0.1.0"
+description = "A simple CLI tool that searches a list of websites related to Israeli attacks of Palestinian civilians for martyr names"
+authors = ["ece-mohammad <kuro.ece@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+beautifulsoup4 = "^4.12.3"
+aiohttp = "^3.9.3"
+tabulate = "^0.9.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
