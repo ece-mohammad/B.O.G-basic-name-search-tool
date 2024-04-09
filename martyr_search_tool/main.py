@@ -5,31 +5,42 @@
 import argparse
 import asyncio
 import logging as log
+from itertools import chain
 from typing import Final, List
 
 import tabulate
 
-from martyr_search_tool.sites import airwars
+from martyr_search_tool.sites import airwars, aitnumbers
 from martyr_search_tool.sites.base_site import SearchResult
 
 Logger: Final[log.Logger] = log.getLogger(__name__)
 
 SearchSites: List = [
     airwars.AirWars(),
+    aitnumbers.AintNumbers(),
 ]
 
 
 def print_results(results: List[SearchResult]) -> None:
+    """Prints search results to the console in a table format.
+
+    :param results: A list of search results
+    :type results: List[SearchResult]
+    :return: None
+    """
     table_headers: List[str] = ["name", "count", "url"]
     table_data: List[List[str]] = []
+    total_matches: int = 0
     for result in results:
         if result.instances is None:
             continue
         table_data.append([result.name, len(result.instances), result.url])
+        total_matches += len(result.instances)
     table: str = tabulate.tabulate(
         table_data, headers=table_headers, tablefmt="pretty"
     )
     print(table)
+    print(f"total matches: {total_matches}")
 
 
 async def main(args: List[str]) -> None:
@@ -49,14 +60,25 @@ async def main(args: List[str]) -> None:
         action="store",
     )
 
+    arg_parser.add_argument(
+        "-v",
+        "--verbose",
+        help="increase output verbosity",
+        action="store_true",
+    )
+
     args = arg_parser.parse_args(args)
-    search_results: List[SearchResult] = list()
+    if args.verbose:
+        log.basicConfig(level=log.DEBUG)
+    search_results: List[List[SearchResult]] = list()
     for martyr_name in args.names:
         Logger.debug(f"searching for name: {martyr_name}")
-        for site in SearchSites:
-            site_results: SearchResult = await site.search_name(martyr_name)
-            search_results.append(site_results)
-    print_results(search_results)
+        search_results.extend(
+            await asyncio.gather(
+                *[site.search_name(martyr_name) for site in SearchSites]
+            )
+        )
+    print_results(list(chain(*search_results)))
 
 
 if __name__ == "__main__":
@@ -64,8 +86,8 @@ if __name__ == "__main__":
 
     log.basicConfig(
         stream=sys.stdout,
-        level=log.ERROR,
-        format="%(name)s:%(levelname)s:%(message)s",
+        level=log.INFO,
+        format="%(levelname)s:%(name)s:%(lineno)d:%(message)s",
     )
 
     asyncio.run(main(sys.argv[1:]))
