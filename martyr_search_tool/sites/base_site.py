@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Provides a base class for site searching websites for martyred children."""
+
 import abc
 import asyncio
+import json
 import logging as log
+import pathlib
+import random
 import re
+from itertools import chain
 from typing import Dict, Final, List, Tuple
 from urllib import parse
 
@@ -12,6 +18,7 @@ import aiohttp
 from bs4 import BeautifulSoup
 
 Logger: Final[log.Logger] = log.getLogger(__name__)
+AgentsFile: Final[pathlib.Path] = pathlib.Path(__file__).parent / "agents.json"
 
 
 class SearchResult:
@@ -86,10 +93,17 @@ class BaseSite(abc.ABC):
     Name: str = ""
     HomePage: str = ""
 
+    def __init__(self, *args, **kwargs):
+        with open(AgentsFile, "r") as f:
+            agents = json.load(f)
+        self.user_agent = random.choice(agents)["ua"]
+        self.headers = {"User-Agent": self.user_agent}
+        Logger.debug(f"User agent: {self.user_agent}")
+
     @staticmethod
     async def fetch_page(
         session: aiohttp.ClientSession, page_url: str
-    ) -> Tuple[str, str | None]:
+    ) -> Tuple[str, int, str | None]:
         """Get the contents of a web page
 
         :param session: aiohttp session
@@ -100,22 +114,23 @@ class BaseSite(abc.ABC):
         if the request failed (response code is not 200)
         :rtype: Tuple[str, str | None]
         """
+        Logger.debug(f"fetching page: {page_url}")
         async with session.get(page_url) as response:
             if response.status != 200:
                 html = None
             else:
-                html = await response.text()
-        return page_url, html
+                html = await response.text(encoding="utf-8")
+        return page_url, response.status, html
 
     @abc.abstractmethod
-    async def search_name(self, martyr_name: str) -> SearchResult:
+    async def search_name(self, martyr_name: str) -> List[SearchResult]:
         """Searches the website for martyr name
 
         :param martyr_name: name to search for in thr site
         :type martyr_name: str
-        :return: A SearchResult instance that contains the name, the search
-        query and the instances where the name was mentioned
-        :rtype: SearchInstance
+        :return: A list of SearchResult instances that contains the name, the
+        search query and the instances where the name was mentioned
+        :rtype: List[SearchResult]
         """
         ...
 
@@ -131,8 +146,8 @@ class BaseSite(abc.ABC):
         :rtype: List[SearchInstance]
         """
         tasks = [self.search_name(name) for name in martyr_names]
-        results: List[SearchResult] = await asyncio.gather(*tasks)
-        return results
+        results: List[List[SearchResult]] = await asyncio.gather(*tasks)
+        return list(chain(*results))
 
 
 class CurlGrepSite(BaseSite):
@@ -153,33 +168,81 @@ class CurlGrepSite(BaseSite):
 
     QueryTemplate: str = ""
 
-    async def search_name(self, martyr_name: str) -> SearchResult:
+    @staticmethod
+    def grep_html(html: str, text: str) -> List[str]:
+        """Search the html of a web page for a text"""
+        matches: List[str] = []
+        parsed_html = BeautifulSoup(html, "html.parser")
+        for line in parsed_html.text.split("\n"):
+            if re.match(f"\\b{text}\\b", line, re.IGNORECASE):
+                matches.append(line)
+        return matches
+
+    async def search_name(self, martyr_name: str) -> List[SearchResult]:
         Logger.debug(f"Searching for name {martyr_name} in {self.Name}...")
         query = self.QueryTemplate.format(name=parse.quote_plus(martyr_name))
         Logger.debug(f"Query: {query}")
-        async with aiohttp.ClientSession() as session:
-            page_url, html = await self.fetch_page(session, query)
-            matches = list()
-            if html is not None:
-                parsed_html = BeautifulSoup(html, "html.parser")
-                page_text = parsed_html.text
-                for line in page_text.split("\n"):
-                    if re.match(f"\\b{martyr_name}\\b", line, re.IGNORECASE):
-                        matches.append(line)
-                Logger.debug(f"Found {len(matches)} matches in {page_url}")
+        async with aiohttp.ClientSession(headers=self.headers) as session:
+            page_url, status_code, html = await self.fetch_page(session, query)
+
+            if status_code != 200:
+                return [SearchResult(page_url, martyr_name, None)]
+
+            matches: List[str] = self.grep_html(html, martyr_name)
+            if matches:
+                Logger.debug(f"Found {len(matches)} match(es) in {page_url}")
             else:
                 Logger.warning(f"Failed to fetch page: {page_url}")
-        return SearchResult(page_url, martyr_name, matches)
+        return [SearchResult(page_url, martyr_name, matches)]
 
 
 class PaginatedSite(CurlGrepSite):
-    """"""
+    """A Subclass of CurlGrepSite for sites that have pagination.
 
-    PaginationTag: str = ""
+    Pages are cycled through until the response is not found (RC 404). The
+    QueryTemplate must contain the {page} placeholder, in addition to the
+    {name} placeholder.
 
-    async def search_name(
-        self, martyr_name: str
-    ) -> Dict[str, Dict[str, List[str]]]: ...
+    Methods:
+        - next_page: Returns the url of the next page
+    """
+
+    QueryTemplate: str = ""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(args, kwargs)
+        self.page = 1
+
+    async def search_name(self, martyr_name: str) -> List[SearchResult]:
+        Logger.debug(f"Searching for name {martyr_name} in {self.Name}...")
+        query = self.QueryTemplate.format(
+            name=parse.quote_plus(martyr_name),
+            page="{page}",
+        )
+        results: List[SearchResult] = []
+        async with aiohttp.ClientSession(headers=self.headers) as session:
+            request_pages: bool = True
+            while request_pages:
+                tasks = [
+                    self.fetch_page(session, query.format(page=page))
+                    for page in range(self.page, self.page + 5)
+                ]
+                self.page += 5
+                responses = await asyncio.gather(*tasks)
+                for page_url, status_code, html in responses:
+                    if status_code == 404:
+                        request_pages = False
+                    elif html is not None:
+                        page_results: List[str] = self.grep_html(
+                            html, martyr_name
+                        )
+                        if page_results:
+                            results.append(
+                                SearchResult(
+                                    page_url, martyr_name, page_results
+                                )
+                            )
+        return results
 
 
 if __name__ == "__main__":
@@ -188,7 +251,7 @@ if __name__ == "__main__":
     log.basicConfig(
         stream=sys.stdout,
         level=log.DEBUG,
-        format="%(name)s:%(levelname)s:%(message)s",
+        format="%(levelname)s:%(name)s:%(message)s",
     )
 
     class TestSite(CurlGrepSite):

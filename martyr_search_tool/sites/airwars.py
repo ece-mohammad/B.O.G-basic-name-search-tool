@@ -67,7 +67,7 @@ if __name__ == "__main__":
     log.basicConfig(
         stream=sys.stdout,
         level=log.DEBUG,
-        format="%(name)s:%(levelname)s:%(message)s",
+        format="%(levelname)s:%(name)s:%(message)s",
     )
 
     async def main():
