@@ -10,7 +10,7 @@ from typing import Final, List
 
 import tabulate
 
-from martyr_search_tool.sites import airwars, aitnumbers
+from martyr_search_tool.sites import airwars, aitnumbers, let_them_grow_up
 from martyr_search_tool.sites.base_site import SearchResult
 
 Logger: Final[log.Logger] = log.getLogger(__name__)
@@ -18,6 +18,7 @@ Logger: Final[log.Logger] = log.getLogger(__name__)
 SearchSites: List = [
     airwars.AirWars(),
     aitnumbers.AintNumbers(),
+    let_them_grow_up.LetThemGrowUp(),
 ]
 
 

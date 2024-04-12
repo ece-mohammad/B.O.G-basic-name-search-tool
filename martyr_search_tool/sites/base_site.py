@@ -100,8 +100,8 @@ class BaseSite(abc.ABC):
         matches: List[str] = []
         parsed_html = BeautifulSoup(html, "html.parser")
         for line in parsed_html.text.split("\n"):
-            if re.match(f"\\b{text}\\b", line, re.IGNORECASE):
-                matches.append(line)
+            if re.search(f"\\b{text}\\b", line, re.IGNORECASE):
+                matches.append(line.strip())
         return matches
 
     @abc.abstractmethod
