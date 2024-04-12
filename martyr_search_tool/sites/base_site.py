@@ -99,13 +99,14 @@ class BaseSite(abc.ABC):
         """Search the html of a web page for a text"""
         matches: List[str] = []
         parsed_html = BeautifulSoup(html, "html.parser")
-        for line in parsed_html.text.split("\n"):
+        body = parsed_html.body
+        for line in body.text.split("\n"):
             if re.search(f"\\b{text}\\b", line, re.IGNORECASE):
                 matches.append(line.strip())
         return matches
 
     @abc.abstractmethod
-    async def search_setup(self):
+    async def search_setup(self) -> None:
         """Setup any objects required for searching the site.
         It's called in object's __init__, and should add objects
         as attributes to the class. The attributes can be used by other
@@ -119,7 +120,7 @@ class BaseSite(abc.ABC):
         ...
 
     @abc.abstractmethod
-    async def search_teardown(self):
+    async def search_teardown(self) -> None:
         """Teardown any objects that were added to the class.
 
         It should close/terminate any objects started/initialized in setup. The
@@ -262,8 +263,11 @@ class PaginatedSite(CurlGrepSite):
 
     QueryTemplate: str = ""
 
+    async def search_setup(self):
+        await super().search_setup()
+        self.page = 1
+
     async def search_name(self, martyr_name: str) -> List[SearchResult]:
-        page = 1
         Logger.debug(f"Searching for name {martyr_name} in {self.Name}...")
         query = self.QueryTemplate.format(
             name=parse.quote_plus(martyr_name),
@@ -275,9 +279,9 @@ class PaginatedSite(CurlGrepSite):
         while request_pages:
             tasks = [
                 self.fetch_page(self.session, query.format(page=page))
-                for page in range(page, page + 5)
+                for page in range(self.page, self.page + 5)
             ]
-            page += 5
+            self.page += 5
             responses = await asyncio.gather(*tasks)
             for page_url, status_code, html in responses:
                 if status_code == 404:
