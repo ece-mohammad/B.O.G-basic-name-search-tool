@@ -60,24 +60,9 @@ async def main(args: List[str]) -> None:
         action="store",
     )
 
-    arg_parser.add_argument(
-        "-v",
-        "--verbose",
-        help="increase output verbosity",
-        action="store_true",
-    )
-
     args = arg_parser.parse_args(args)
-    if args.verbose:
-        log.basicConfig(level=log.DEBUG)
-    search_results: List[List[SearchResult]] = list()
-    for martyr_name in args.names:
-        Logger.debug(f"searching for name: {martyr_name}")
-        search_results.extend(
-            await asyncio.gather(
-                *[site.search_name(martyr_name) for site in SearchSites]
-            )
-        )
+    tasks = [site.search_names(args.names) for site in SearchSites]
+    search_results = await asyncio.gather(*tasks)
     print_results(list(chain(*search_results)))
 
 
