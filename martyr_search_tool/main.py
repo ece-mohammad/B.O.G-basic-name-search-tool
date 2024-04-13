@@ -15,6 +15,7 @@ from martyr_search_tool.sites import (
     aitnumbers,
     let_them_grow_up,
     our_ghaza,
+    twitter
 )
 from martyr_search_tool.sites.base_site import SearchResult
 
@@ -25,6 +26,7 @@ SearchSites: List = [
     aitnumbers.AintNumbers(),
     let_them_grow_up.LetThemGrowUp(),
     our_ghaza.OurGhaza(),
+    twitter.Twitter()
 ]
 
 

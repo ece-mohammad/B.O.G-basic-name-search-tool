@@ -132,3 +132,5 @@ dist
 .idea
 **__pycache__
 site
+**/.twitter_cookies
+**/config.toml
