@@ -14,15 +14,17 @@ their names, and links to the sources.
 
 """
 
+from typing import List
+
 from martyr_search_tool.sites import base_site
 
 
-class LetThemGrowUp(base_site.CurlGrepSite):
+class LetThemGrowUp(base_site.SinglePageSite):
     Name: str = "LetThemGrowUp"
     HomePage: str = "https://letthemgrowup.com"
-    QueryTemplate: str = (
-        "https://letthemgrowup.com/children-we-already-lost-en/"
-    )
+    URLS: List[str] = [
+        "https://letthemgrowup.com/children-we-already-lost-en/",
+    ]
 
 
 if __name__ == "__main__":

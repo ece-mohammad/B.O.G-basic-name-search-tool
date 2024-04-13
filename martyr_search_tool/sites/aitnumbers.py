@@ -25,15 +25,16 @@ the pattern https://www.aintnumbers.com/page/{pagination}/?s={search_query}.
 
 import asyncio
 
-from martyr_search_tool.sites.base_site import PaginatedSite
+from martyr_search_tool.sites import base_site
 
 
-class AintNumbers(PaginatedSite):
+class AintNumbers(base_site.PaginatedQuerySite):
     """Searches aintnumbers.com for martyrs by name"""
 
     Name: str = "AintNumbers"
     HomePage: str = "https://www.aintnumbers.com/"
     QueryTemplate: str = "https://www.aintnumbers.com/page/{page}/?s={name}"
+    StartPage: int = 1
 
 
 if __name__ == "__main__":

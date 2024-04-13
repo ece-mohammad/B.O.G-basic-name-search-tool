@@ -10,8 +10,9 @@ import logging as log
 import pathlib
 import random
 import re
+from collections import namedtuple
 from itertools import chain
-from typing import Dict, Final, List, Tuple
+from typing import Dict, Final, List
 from urllib import parse
 
 import aiohttp
@@ -20,6 +21,7 @@ from bs4 import BeautifulSoup
 
 Logger: Final[log.Logger] = log.getLogger(__name__)
 AgentsFile: Final[pathlib.Path] = pathlib.Path(__file__).parent / "agents.json"
+FetchResult = namedtuple("FetchResult", ["url", "status", "html"])
 
 
 class SearchResult:
@@ -73,6 +75,76 @@ class SearchResult:
 
     def __str__(self):
         return f"{self.url}:{self.name}:{self.instances}"
+
+
+class BaseFetch(abc.ABC):
+    """An abstract base class for fetching web pages.
+
+    Subclasses must implement the fetch_page() method, and
+    async_setch_page() method.
+    """
+
+    @abc.abstractmethod
+    async def fetch_setup(self, *args, **kwargs):
+        """Sets up objects required to fetch web pages."""
+        ...
+
+    @abc.abstractmethod
+    async def fetch_teardown(self, *args, **kwargs):
+        """Closes/deletes objects that were used to fetch web pages."""
+        ...
+
+    @abc.abstractmethod
+    async def fetch_page(self, page_url: str, **kwargs) -> FetchResult:
+        """Get the contents of a web page
+
+        :param page_url: url of the page
+        :type page_url: str
+        :return: A FetchResult instance that contains the url, the status code
+        and the page's content.
+        :rtype: FetchResult
+        """
+        ...
+
+
+class StaticFetch(BaseFetch):
+    """A class that fetches web pages from a static site."""
+
+    async def fetch_setup(self, *args, **kwargs):
+        """Create a new aiohttp.ClientSession and set the User-Agent header."""
+        async with await open_file(AgentsFile) as f:
+            contents: str = await f.read()
+        agents: List[Dict[str, str]] = json.loads(contents)
+        self.user_agent: str = random.choice(agents)["ua"]
+        self.headers: Dict[str, str] = {"User-Agent": self.user_agent}
+        self.session: aiohttp.ClientSession = aiohttp.ClientSession(
+            headers=self.headers
+        )
+        Logger.debug(f"Using headers: {self.user_agent}")
+
+    async def fetch_teardown(self, *args, **kwargs):
+        """Close the aiohttp.ClientSession session."""
+        await self.session.close()
+
+    async def fetch_page(self, page_url: str, **kwargs) -> FetchResult:
+        """Get the contents of a web page
+
+        :param page_url: url of the page
+        :type page_url: str
+        :return: A FetchResult instance that contains the url, the status code
+        and the page's content.
+        :rtype: FetchResult
+        """
+        Logger.debug(f"Fetching page: {page_url}")
+        async with self.session.get(page_url) as response:
+            if response.status != 200:
+                html = None
+                Logger.error(
+                    f"Error: {response.status} while fetching page: {page_url}"
+                )
+            else:
+                html = await response.text(encoding="utf-8")
+        return FetchResult(page_url, response.status, html)
 
 
 class BaseSite(abc.ABC):
@@ -131,7 +203,9 @@ class BaseSite(abc.ABC):
         ...
 
     @abc.abstractmethod
-    async def search_name(self, martyr_name: str) -> List[SearchResult]:
+    async def search_name(
+        self, martyr_name: str, **kwargs
+    ) -> List[SearchResult]:
         """Searches the website for martyr name.
 
         Do not use this method to search for names, use search_names instead.
@@ -173,10 +247,62 @@ class BaseSite(abc.ABC):
         return list(chain(*results))
 
 
-class CurlGrepSite(BaseSite):
+class SinglePageSite(StaticFetch, BaseSite):
+    """A Basic site where the data is located in a single pages, and the search
+    query isn't related to the search term.
+
+    SinglePageSite subclasses BaseSite and implements the `search_name()`
+    method to search for names in the html of the site's page. The response
+    of the URL is searched for the name using Regex. The search is
+    case-insensitive. The results contain the lines in the response that
+    contain the name. The results may contain duplicates.
+
+    Class Attributes:
+        - URLS: A list of URLs where the data is located.
+    """
+
+    URLS: List[str] = ""
+
+    def __init__(self):
+        self.html: List[FetchResult] = []
+
+    async def search_setup(self):
+        await self.fetch_setup()
+        self.html: List[FetchResult] = await asyncio.gather(
+            *[self.fetch_page(url) for url in self.URLS]
+        )
+
+    async def search_teardown(self):
+        await self.fetch_teardown()
+
+    async def search_name(
+        self, martyr_name: str, **kwargs
+    ) -> List[SearchResult]:
+        search_results: List[SearchResult] = []
+        for page in self.html:
+            if page.html is None:
+                break
+
+            matches = self.grep_html(page.html, martyr_name)
+            if matches:
+                search_results.append(
+                    SearchResult(page.url, martyr_name, matches)
+                )
+                Logger.debug(
+                    f"Found {len(matches)} matches in {self.Name} for {martyr_name}"
+                )
+            else:
+                Logger.debug(
+                    f"Found no matches in {self.Name} for {martyr_name}"
+                )
+
+        return search_results
+
+
+class SinglePageQuerySite(StaticFetch, BaseSite):
     """A Basic site where the response of a query URL is searched for names.
 
-    BaseCurlGrepSite subclasses BaseSite and implements the search_name method
+    SinglePageQuerySite subclasses BaseSite and implements the search_name method
     to search for names in the response of a query URL. First, the query URL
     is constructed by replacing the {name} placeholder in the QueryTemplate
     with the name to search for. Then, the response of the query URL is
@@ -185,119 +311,206 @@ class CurlGrepSite(BaseSite):
     The results may contain duplicates.
 
     Class Attributes:
-        - QueryTemplate: The query template for the site used to search for
-        names. The query template must contain the {name} placeholder.
+        - QueryTemplates: The query templates for the site used to search for
+        names. Query templates must contain the {name} placeholder.
     """
 
-    QueryTemplate: str = ""
-
-    @staticmethod
-    async def fetch_page(
-        session: aiohttp.ClientSession, page_url: str
-    ) -> Tuple[str, int, str | None]:
-        """Get the contents of a web page
-
-        :param session: aiohttp session
-        :type session: aiohttp.ClientSession
-        :param page_url: url of the page
-        :type page_url: str
-        :return: The url of the page and the content of the page, or None
-        if the request failed (response code is not 200)
-        :rtype: Tuple[str, str | None]
-        """
-        Logger.debug(f"Fetching page: {page_url}")
-        async with session.get(page_url) as response:
-            if response.status != 200:
-                html = None
-                Logger.error(
-                    f"Error: {response.status} while fetching page: {page_url}"
-                )
-            else:
-                html = await response.text(encoding="utf-8")
-        return page_url, response.status, html
+    QueryTemplates: List[str] = ""
 
     async def search_setup(self):
-        async with await open_file(AgentsFile) as f:
-            contents: str = await f.read()
-        agents: Dict[str, str] = json.loads(contents)
-        self.user_agent: str = random.choice(agents)["ua"]
-        self.headers: Dict[str, str] = {"User-Agent": self.user_agent}
-        self.session: aiohttp.ClientSession = aiohttp.ClientSession(
-            headers=self.headers
-        )
-        Logger.debug(f"{self.Name}: Using headers: {self.user_agent}")
+        await self.fetch_setup()
 
     async def search_teardown(self):
-        await self.session.close()
+        await self.fetch_teardown()
 
-    async def search_name(self, martyr_name: str) -> List[SearchResult]:
+    async def search_name(
+        self, martyr_name: str, **kwargs
+    ) -> List[SearchResult]:
         Logger.debug(f"Searching site: {self.Name} for name {martyr_name}...")
-        query = self.QueryTemplate.format(name=parse.quote_plus(martyr_name))
-        Logger.debug(f"Query: {query}")
+        queries = [
+            q.format(name=parse.quote_plus(martyr_name))
+            for q in self.QueryTemplates
+        ]
+        Logger.debug(f"Queries: {queries}")
 
-        page_url, status_code, html = await self.fetch_page(
-            self.session, query
+        tasks = [self.fetch_page(query) for query in queries]
+        pages: List[FetchResult] = await asyncio.gather(*tasks)
+        search_results: List[SearchResult] = []
+        for page in pages:
+            if page.html is None:
+                continue
+
+            if page.status != 200:
+                continue
+
+            matches: List[str] = self.grep_html(page.html, martyr_name)
+            if matches:
+                search_results.append(
+                    SearchResult(page.url, martyr_name, matches)
+                )
+                Logger.debug(f"Found {len(matches)} match(es) in {page.url}")
+            else:
+                Logger.debug(f"No matches for {martyr_name} in {page.url}")
+        return search_results
+
+
+class PaginatedSite(StaticFetch, BaseSite):
+    """A Subclass of BaseSite for sites that have pagination.
+
+    Like SingePageSite, the search query is not related to the search term. But
+    the data is located in multiple pages. Pages are cycled through until the
+    response is not found (response status is not 200).
+
+    Class Attributes:
+        - UrlTemplate: The URL template for the site. The URL template must
+        contain the {page} placeholder.
+        - FirstPage: The first page of the site. The default value, as in most
+        cases, is 1. But some sites don't use pagination index for the first
+        page, in that case, it should be set to 0.
+    """
+
+    UrlTemplate: str = ""
+    FirstPage: int = 1
+
+    async def search_setup(self) -> None:
+        await super().fetch_setup()
+        self.page_index: int = self.FirstPage
+
+    async def search_teardown(self) -> None:
+        await self.fetch_teardown()
+
+    async def search_name(
+        self, martyr_name: str, **kwargs
+    ) -> List[SearchResult]:
+        Logger.debug(f"Searching for name {martyr_name} in {self.Name}...")
+        page = kwargs["page"]
+        search_results: List[SearchResult] = []
+        if page.html:
+            matches: List[str] = self.grep_html(page.html, martyr_name)
+            if matches:
+                search_results.append(
+                    SearchResult(page.url, martyr_name, matches)
+                )
+                Logger.debug(f"Found {len(matches)} match(es) in {page.url}")
+            else:
+                Logger.debug(
+                    f"Found no matches for {martyr_name} in {page.url}"
+                )
+        return search_results
+
+    async def get_pages(self) -> List[FetchResult]:
+        pages: List[FetchResult] = []
+        iter_pages: bool = True
+        while iter_pages:
+            if self.page_index == 0:
+                pages.append(
+                    await self.fetch_page(self.UrlTemplate.format(page=""))
+                )
+                self.page_index = 2
+            else:
+                pages.extend(
+                    await asyncio.gather(
+                        *[
+                            self.fetch_page(self.UrlTemplate.format(page=page))
+                            for page in range(
+                                self.page_index, self.page_index + 5
+                            )
+                        ]
+                    )
+                )
+                self.page_index += 5
+
+            for page in pages:
+                if page.status == 404:
+                    iter_pages = False
+                    break
+
+        return pages
+
+    async def search_names(
+        self, martyr_names: List[str]
+    ) -> List[SearchResult]:
+        Logger.info(
+            f"Searching site: {self.Name} for names: {', '.join(martyr_names)}"
         )
+        await self.search_setup()
 
-        if status_code != 200:
-            return [SearchResult(page_url, martyr_name, None)]
+        pages: List[FetchResult] = await self.get_pages()
+        tasks = [
+            self.search_name(name, page=page)
+            for name in martyr_names
+            for page in pages
+        ]
+        results: List[List[SearchResult]] = await asyncio.gather(*tasks)
 
-        matches: List[str] = self.grep_html(html, martyr_name)
-        if matches:
-            Logger.debug(f"Found {len(matches)} match(es) in {page_url}")
-        else:
-            Logger.debug(f"No matches for {martyr_name} in {page_url}")
-        return [SearchResult(page_url, martyr_name, matches)]
+        await self.search_teardown()
+        return list(chain(*results))
 
 
-class PaginatedSite(CurlGrepSite):
-    """A Subclass of CurlGrepSite for sites that have pagination.
+class PaginatedQuerySite(StaticFetch, BaseSite):
+    """A Subclass of SinglePageQuerySite for sites that have pagination.
 
     Pages are cycled through until the response is not found (RC 404). The
     QueryTemplate must contain the {page} placeholder, in addition to the
     {name} placeholder.
 
-    Methods:
-        - next_page: Returns the url of the next page
+    Class Attributes:
+        - UrlTemplate: The URL template for the site. The URL template must
+        contain the {page} placeholder, as well as the {name} placeholder.
+        - FirstPage: The first page of the site. The default value, as in most
+        cases, is 1. But some sites don't use pagination index for the first
+        page, in that case, it should be set to 0.
     """
 
     QueryTemplate: str = ""
+    StartPage: int = 1
 
     async def search_setup(self):
-        await super().search_setup()
+        await super().fetch_setup()
         self.page = 1
 
-    async def search_name(self, martyr_name: str) -> List[SearchResult]:
+    async def search_teardown(self) -> None:
+        await self.fetch_teardown()
+
+    async def search_name(
+        self, martyr_name: str, **kwargs
+    ) -> List[SearchResult]:
         Logger.debug(f"Searching for name {martyr_name} in {self.Name}...")
-        query = self.QueryTemplate.format(
-            name=parse.quote_plus(martyr_name),
-            page="{page}",
-        )
         results: List[SearchResult] = []
 
         request_pages: bool = True
         while request_pages:
             tasks = [
-                self.fetch_page(self.session, query.format(page=page))
+                self.fetch_page(
+                    self.QueryTemplate.format(
+                        name=parse.quote_plus(martyr_name),
+                        page=page
+                    )
+                )
                 for page in range(self.page, self.page + 5)
             ]
             self.page += 5
             responses = await asyncio.gather(*tasks)
-            for page_url, status_code, html in responses:
-                if status_code == 404:
+            for response in responses:
+                if response.status == 404:
                     request_pages = False
-                elif html is not None:
-                    page_results: List[str] = self.grep_html(html, martyr_name)
+                    continue
+                if response.html:
+                    page_results: List[str] = self.grep_html(
+                        response.html, martyr_name
+                    )
                     if page_results:
                         results.append(
-                            SearchResult(page_url, martyr_name, page_results)
+                            SearchResult(
+                                response.url, martyr_name, page_results
+                            )
                         )
                         Logger.debug(
-                            f"Found {len(page_results)} match(es) in {page_url}"
+                            f"Found {len(page_results)} match(es) in {response.url}"
                         )
                     else:
                         Logger.debug(
-                            f"Found no matches for {martyr_name} in {page_url}"
+                            f"Found no matches for {martyr_name} in {response.url}"
                         )
         return results
 
@@ -311,7 +524,7 @@ if __name__ == "__main__":
         format="%(levelname)s:%(name)s:%(message)s",
     )
 
-    class TestSite(CurlGrepSite):
+    class TestSite(SinglePageQuerySite):
         Name = "AirWars"
         HomePage = "https://airwars.org"
         QueryTemplate: Final[str] = (

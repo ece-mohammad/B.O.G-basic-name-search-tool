@@ -29,47 +29,15 @@ articles is straight forward.
 3. Increment page_number, and repeat from step 1 till we get a 404 Error.
 
 """
-import asyncio
-from itertools import chain
-from typing import List
 
 from martyr_search_tool.sites import base_site
-from martyr_search_tool.sites.base_site import SearchResult
 
 
-class _OurGhazaFirstPage(base_site.CurlGrepSite):
+class OurGhaza(base_site.PaginatedSite):
     Name: str = "OurGaza"
     HomePage: str = "https://ourgaza.com/"
-    QueryTemplate: str = "https://ourgaza.com/martyrs"
-
-
-class _OurGhazaPages(base_site.PaginatedSite):
-    Name: str = "OurGaza"
-    HomePage: str = "https://ourgaza.com/"
-    QueryTemplate: str = "https://ourgaza.com/martyrs/{page}"
-
-
-class OurGhaza(base_site.BaseSite):
-    Name: str = "OurGaza"
-    HomePage: str = "https://ourgaza.com/"
-    QueryTemplate: str = "https://ourgaza.com/martyrs/{page}"
-
-    def __init__(self, *args, **kwargs):
-        self.sites = [_OurGhazaFirstPage(), _OurGhazaPages()]
-
-    async def search_setup(self):
-        await asyncio.gather(*[site.search_setup() for site in self.sites])
-        self.sites[1].page = 2
-
-    async def search_teardown(self):
-        await asyncio.gather(*[site.search_teardown() for site in self.sites])
-
-    async def search_name(self, martyr_name: str) -> List[SearchResult]:
-        search_results: List[List[SearchResult]] = await asyncio.gather(
-            *[site.search_name(martyr_name) for site in self.sites]
-        )
-
-        return list(chain(*search_results))
+    UrlTemplate: str = "https://ourgaza.com/martyrs/{page}"
+    FirstPage: int = 0
 
 
 if __name__ == "__main__":
