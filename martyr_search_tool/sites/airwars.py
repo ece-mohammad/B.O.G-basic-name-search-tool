@@ -42,22 +42,23 @@ https://airwars.org/civilian-casualties/?belligerent=israeli-military&start_data
 
 
 import asyncio
+from typing import List
 
-from martyr_search_tool.sites.base_site import CurlGrepSite
+from martyr_search_tool.sites.base_site import SinglePageQuerySite
 
 
-class AirWars(CurlGrepSite):
+class AirWars(SinglePageQuerySite):
     """Searches airwars.org for martyrs by name"""
 
     Name: str = "AirWars"
     HomePage: str = "https://airwars.org"
-    QueryTemplate: str = (
+    QueryTemplates: List[str] = [
         "https://airwars.org/civilian-casualties/?"
         "belligerent=israeli-military"
         "&start_data=2023-10-07"
         "&country=the-gaza-strip"
-        "&search={name}"
-    )
+        "&search={name}",
+    ]
 
 
 if __name__ == "__main__":
